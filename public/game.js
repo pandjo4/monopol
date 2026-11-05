@@ -20,14 +20,15 @@ $('roomCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('joinBtn').cli
 $('copyCode').onclick=()=>{navigator.clipboard?.writeText(roomCode||'');toast('Kod sobe je kopiran.');};
 $('startBtn').onclick=()=>emit('startGame');
 $('roundSelect').onchange=e=>emit('setRounds',+e.target.value);
-$('leaveBtn').onclick=()=>{showScreen('home');state=null;};
+$('leaveBtn').onclick=()=>{emit('leaveRoom');sessionStorage.removeItem('bm_token');sessionStorage.removeItem('bm_code');myId=null;myToken=null;roomCode=null;showScreen('home');state=null;};
 socket.on('joined',d=>{myId=d.playerId;myToken=d.token;roomCode=d.code;sessionStorage.setItem('bm_token',myToken);sessionStorage.setItem('bm_code',roomCode);});
 socket.on('connect',()=>{const token=sessionStorage.getItem('bm_token'),code=sessionStorage.getItem('bm_code');if(token&&code)emit('joinRoom',{code,token,name:$('playerName')?.value||'Igrač'});});
 socket.on('state',s=>{state=s;roomCode=s.code;if(!s.game){showScreen('lobby');renderLobby();}else{showScreen('game');renderGame();}});
 socket.on('errorMessage',m=>toast(m));
 function renderLobby(){
  $('lobbyCode').textContent=state.code;$('playerCount').textContent=`${state.players.length} / 6 igrača`;
- $('lobbyPlayers').innerHTML=state.players.map((p,i)=>`<div class="lobby-player"><div class="avatar" style="background:${p.colorToken}">${esc(p.name[0]?.toUpperCase())}</div><div><b>${esc(p.name)}</b><small>${p.id===state.hostId?'✦ Domaćin':'Igrač'}</small></div>${p.id===state.hostId?'<span style="margin-left:auto;color:#c49c51">♛</span>':''}</div>`).join('');
+ $('lobbyPlayers').innerHTML=state.players.map((p,i)=>`<div class="lobby-player"><div class="avatar" style="background:${p.colorToken}">${esc(p.name[0]?.toUpperCase())}</div><div><b>${esc(p.name)}</b><small>${p.id===state.hostId?'✦ Domaćin':'Igrač'}</small></div>${p.id===state.hostId?'<span style="margin-left:auto;color:#c49c51">♛</span>':state.hostId===myId?`<button class="text-btn kick-player" data-id="${p.id}" style="margin-left:auto;padding:4px">Izbaci</button>`:''}</div>`).join('');
+ $('lobbyPlayers').querySelectorAll('.kick-player').forEach(b=>b.onclick=()=>emit('kick',b.dataset.id));
  $('startBtn').disabled=state.hostId!==myId||state.players.length<2;$('startBtn').textContent=state.hostId===myId?'Započni partiju':'Čekamo domaćina…';
  $('lobbyHint').textContent=state.hostId===myId?(state.players.length<2?'Pozovi barem još jednog igrača.':'Svi su spremni? Započni partiju.'):'Samo domaćin može pokrenuti igru.';
  $('roundSelect').value=state.maxRounds||30;
@@ -51,12 +52,12 @@ function renderPlayers(){
 }
 function renderGame(){
  const g=state.game,p=me(),turn=current();$('roundLabel').textContent=`KRUG ${g.round} / ${g.maxRounds}`;$('turnLabel').textContent=`Na potezu: ${turn?.name||'—'}`;
- $('centerRound').textContent=`KRUG ${g.round} OD ${g.maxRounds}`;$('centerTurn').textContent=turn?`NA POTEZU: ${turn.name.toUpperCase()}`:'Partija završena';
+ $('centerRound').textContent=`KRUG ${g.round} OD ${g.maxRounds}`;$('centerTurn').textContent=g.paused?'IGRA JE PAUZIRANA':turn?`NA POTEZU: ${turn.name.toUpperCase()}`:'Partija završena';
  $('turnPlayerName').textContent=turn?.name||'—';$('turnPlayerMoney').textContent=`${turn?.money??0} KM`;const dice=g.lastRoll;
  $('dieA').textContent=dice?DICE[dice.a-1]:'⚀';$('dieB').textContent=dice?DICE[dice.b-1]:'⚀';$('diceDisplay').innerHTML=dice?`<span>${DICE[dice.a-1]}</span><span>${DICE[dice.b-1]}</span>`:'<span>⚀</span><span>⚀</span>';
  $('lastAction').textContent=g.log.at(-1)?.text||'Sretno u igri!';const isTurn=turn?.id===myId;
- $('rollBtn').disabled=!isTurn||g.phase!=='turn'||p?.hasRolled;$('endBtn').disabled=!isTurn||['buy','taxi','auction','auctionColor','debt','cardChoice','trade'].includes(g.phase);
- $('rollBtn').textContent=p?.inJail?'Pokušaj izlazak':'Baci kockice';$('endBtn').textContent='Završi potez';
+ $('rollBtn').disabled=!isTurn||g.paused||g.phase!=='turn'||p?.hasRolled;$('endBtn').disabled=!isTurn||g.paused||!p?.hasRolled||p?.extraRoll||['buy','taxi','auction','auctionColor','debt','cardChoice','trade'].includes(g.phase);
+ $('rollBtn').textContent=p?.inJail?'Pokušaj izlazak':'Baci kockice';$('endBtn').textContent='Završi potez';$('pauseBtn').textContent=g.paused?'▶':'Ⅱ';$('pauseBtn').title=g.paused?'Nastavi igru':'Pauziraj igru';$('pauseBtn').style.display=state.hostId===myId?'':'none';$('pauseBtn').disabled=g.ended;
  $('rollBtnMobile').disabled=$('rollBtn').disabled;$('endBtnMobile').disabled=$('endBtn').disabled;
  renderBoard();renderPlayers();renderAction();
  $('activityLog').innerHTML=[...g.log].reverse().slice(0,12).map(x=>`<div class="activity-item">${esc(x.text)}</div>`).join('');
@@ -65,6 +66,7 @@ function renderGame(){
 }
 $('rollBtn').onclick=$('rollBtnMobile').onclick=()=>emit('roll');
 $('endBtn').onclick=$('endBtnMobile').onclick=()=>emit('endTurn');
+$('pauseBtn').onclick=()=>emit('pause');
 function renderAction(){
  const box=$('actionPanel'),g=state.game,p=me();let html='<div class="panel-title">TVOJE AKCIJE</div>';
  if(g.phase==='buy'&&g.pending?.playerId===myId){const pr=g.properties.find(x=>x.id===g.pending.propertyId);html+=`<b>${esc(pr.name)}</b><p class="muted">Cijena ${pr.price} KM · Izaberi boju za kupovinu.</p>${colorButtons('buy') }<button class="btn ghost wide" id="declineBuy">Preskoči kupovinu · aukcija</button>`;}
@@ -74,10 +76,12 @@ function renderAction(){
  else if(g.phase==='cardChoice'&&g.pending?.playerId===myId){const q=g.pending;html+='<b>Izaberi bonus</b>';(q.choices||[]).forEach(x=>html+=`<button class="btn ghost wide card-choice" data-id="${x.id}">${esc(x.name)}</button>`);if(q.type==='freeColor')html+=colorButtons('freeCard');}
  else if(g.phase==='debt'&&g.pending?.playerId===myId){html+='<b>Izmirenje duga</b><p class="muted">Prodaj nekretninu banci za polovinu cijene i vrijednost gradnje.</p>';g.pending.choices.forEach(x=>html+=`<button class="btn ghost wide debt-sell" data-id="${x.id}">Prodaj ${esc(x.name)}</button>`);}
  else if(g.phase==='trade'&&g.trade?.to===myId){const from=state.players.find(x=>x.id===g.trade.from);html+=`<b>Ponuda od ${esc(from.name)}</b><p class="muted">Prihvati ili odbij razmjenu.</p><button class="btn primary wide" id="tradeYes">Prihvati</button><button class="btn ghost wide" id="tradeNo">Odbij</button>`;}
- else{html+='<p class="muted">Baci kockice kada dođeš na red. Klikni na bilo koju nekretninu na tabli za detalje.</p>';if(p){const own=g.properties.filter(x=>x.owner===myId);if(own.length){html+='<hr><b style="font-size:11px">Upravljanje imovinom</b>';own.slice(0,5).forEach(x=>html+=`<button class="btn ghost wide property-manage" data-id="${x.id}">${esc(x.name)} · ${x.houses} kuć. ${x.hotel?'· Hotel':''}</button>`);}}}
+ else{html+='<p class="muted">Baci kockice kada dođeš na red. Klikni na bilo koju nekretninu na tabli za detalje.</p>';if(p?.inJail)html+='<button class="btn primary wide" id="jailBail">Plati kauciju · 100 KM</button>';if(p&&g.currentPlayerId===myId&&!p.inJail&&g.phase==='turn')html+='<button class="btn ghost wide" id="tradeOpen">Ponudi razmjenu</button>';if(p){const own=g.properties.filter(x=>x.owner===myId);if(own.length){html+='<hr><b style="font-size:11px">Upravljanje imovinom</b>';own.slice(0,5).forEach(x=>html+=`<button class="btn ghost wide property-manage" data-id="${x.id}">${esc(x.name)} · ${x.houses} kuć. ${x.hotel?'· Hotel':''}</button>`);}}}
  box.innerHTML=html;
  const byId=id=>$(id);
  byId('declineBuy')?.addEventListener('click',()=>emit('declineBuy'));
+ byId('jailBail')?.addEventListener('click',()=>emit('jailBail'));
+ byId('tradeOpen')?.addEventListener('click',showTradeForm);
  byId('skipTaxi')?.addEventListener('click',()=>emit('skipTaxi'));
  byId('bidBtn')?.addEventListener('click',()=>emit('bid',+$('bidAmount').value||0));
  byId('tradeYes')?.addEventListener('click',()=>emit('tradeRespond',true));byId('tradeNo')?.addEventListener('click',()=>emit('tradeRespond',false));
@@ -86,6 +90,26 @@ function renderAction(){
  box.querySelectorAll('.card-choice').forEach(b=>b.onclick=()=>emit('cardChoice',{choiceId:b.dataset.id}));
  box.querySelectorAll('.debt-sell').forEach(b=>b.onclick=()=>emit('debtSell',{propertyId:b.dataset.id}));
  box.querySelectorAll('.property-manage').forEach(b=>b.onclick=()=>showProperty(b.dataset.id));
+}
+function showTradeForm(){
+ const targets=state.players.filter(p=>p.id!==myId&&!p.bankrupt);
+ if(!targets.length)return toast('Nema drugog aktivnog igrača za razmjenu.');
+ const own=state.game.properties.filter(p=>p.owner===myId);
+ const render=()=>{
+  const targetId=$('tradeTarget').value;
+  const other=state.game.properties.filter(p=>p.owner===targetId);
+  $('tradeGiveProps').innerHTML=own.length?own.map(p=>`<label class="trade-check"><input type="checkbox" value="${p.id}" class="trade-give"> ${esc(p.name)}</label>`).join(''):'<small>Nemaš nekretnina za ponuditi.</small>';
+  $('tradeWantProps').innerHTML=other.length?other.map(p=>`<label class="trade-check"><input type="checkbox" value="${p.id}" class="trade-want"> ${esc(p.name)}</label>`).join(''):'<small>Ovaj igrač nema nekretnina.</small>';
+ };
+ $('modalContent').innerHTML=`<h3>Ponudi razmjenu</h3><label>Trguješ sa<select id="tradeTarget">${targets.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><div class="trade-form-grid"><div><b>Nudiš nekretnine</b><div id="tradeGiveProps" class="trade-props"></div></div><div><b>Tražiš nekretnine</b><div id="tradeWantProps" class="trade-props"></div></div></div><label>Novac koji ti nudiš (KM)<input id="tradeCash" type="number" min="0" step="1" value="0"></label><label>Novac koji tražiš (KM)<input id="tradeRequestCash" type="number" min="0" step="1" value="0"></label><button class="btn primary wide" id="sendTrade">Pošalji ponudu</button>`;
+ $('modal').classList.remove('hidden');$('tradeTarget').onchange=render;render();
+ $('sendTrade').onclick=()=>{
+  const toId=$('tradeTarget').value;
+  const propertyIds=[...$('tradeGiveProps').querySelectorAll('.trade-give:checked')].map(x=>x.value);
+  const requestPropertyIds=[...$('tradeWantProps').querySelectorAll('.trade-want:checked')].map(x=>x.value);
+  const cash=Math.floor(Number($('tradeCash').value)||0),requestCash=Math.floor(Number($('tradeRequestCash').value)||0);
+  emit('tradeOffer',{toId,propertyIds,requestPropertyIds,cash,requestCash});$('modal').classList.add('hidden');
+ };
 }
 function colorButtons(mode){return `<div class="modal-grid">${COLORS.map(c=>{const n=state.game.properties.filter(p=>p.color===c).length;return `<button class="color-choice" data-mode="${mode}" data-color="${c}" ${n>=3?'disabled':''}><i style="background:${HEX[c]}"></i>${c} <small>${n}/3</small></button>`}).join('')}</div>`;}
 function showProperty(id){

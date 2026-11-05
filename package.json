@@ -2,11 +2,13 @@
   "name": "monopoly-bosanska-mahala",
   "version": "1.0.0",
   "private": true,
-  "description": "Online multiplayer board game Monopoly: Bosanska Mahala",
+  "description": "Online multiplayer društvena igra Monopoly: Bosanska Mahala",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check public/game.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"
