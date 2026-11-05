@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: monopoly-bosanska-mahala
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
