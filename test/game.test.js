@@ -13,11 +13,11 @@ function makeGame(players, properties=t.properties.map(p=>({...p}))) {
     discarded:[], cardPiles:{nafaka:[...t.nafakaDeck],rizik:[...t.rizikDeck]}, queuedCards:[] };
 }
 
-test('tabla ima 48 polja: 24 nekretnine, 4 taxi, 4 ugla i 16 specijalnih', () => {
+test('kompaktna tabla ima 40 polja: 20 nekretnina, 4 taxi, 4 ugla i 12 specijalnih', () => {
   const counts=t.board.reduce((a,s)=>(a[s.type]=(a[s.type]||0)+1,a),{});
-  assert.equal(t.board.length,48);
-  assert.deepEqual(counts,{corner:4,property:24,special:16,taxi:4});
-  assert.equal(new Set(t.board.map(x=>x.index)).size,48);
+  assert.equal(t.board.length,40);
+  assert.deepEqual(counts,{corner:4,property:20,special:12,taxi:4});
+  assert.equal(new Set(t.board.map(x=>x.index)).size,40);
 });
 
 test('globalno ograničenje boje nikada ne dopušta četvrtu nekretninu', () => {
@@ -40,6 +40,7 @@ test('renta se množi ×2 za boju, ×2 za kategoriju i ×4 za oba bonusa', () =>
   // c completes both its red color group and its transport category group.
   const f=g.properties[5];f.owner='a';f.category='transport';f.color='zelena';
   const h=g.properties[6];h.owner='a';h.category='transport';h.color='roza';
+  const i=g.properties[7],j=g.properties[8];i.owner=j.owner='a';i.category=j.category='transport';
   assert.equal(t.rentFor(g,c),c.baseRent*4);
 });
 
@@ -107,4 +108,16 @@ test('server može inicijalizirati partiju sa 2 do 6 igrača', () => {
     assert.equal(room.game.currentPlayerId,players[0].id);
     assert.ok(players.every(p=>p.money===2500));
   }
+});
+
+test('svaka od četiri kategorije ima tačno pet nekretnina', () => {
+  const counts=t.properties.reduce((a,p)=>(a[p.category]=(a[p.category]||0)+1,a),{});
+  assert.deepEqual(counts,{'smještaj':5,trgovina:5,transport:5,infrastruktura:5});
+  assert.equal(new Set(t.properties.map(p=>p.id)).size,20);
+});
+
+test('zatvor i izlaz iz zatvora koriste uglove nove table', () => {
+  assert.equal(t.board.findIndex(x=>x.kind==='jail'),30);
+  assert.equal(t.board.findIndex(x=>x.kind==='jailvisit'),10);
+  assert.equal(t.board.findIndex(x=>x.kind==='start'),0);
 });

@@ -20,17 +20,19 @@
    <div class="home-foot"><span>✦</span> Privatne sobe · Bez registracije · Online multiplayer</div>
   </div>
  </div>
- <div class="home-side"><div class="side-card"><span class="side-icon">⌂</span><b>Gradi svoju imperiju</b><small>24 autentične nekretnine iz bosanske mahale.</small></div><div class="side-card"><span class="side-icon">◈</span><b>Promijeni pravila igre</b><small>Osam boja, taktički bonusi i pametne investicije.</small></div><div class="side-card"><span class="side-icon">♟</span><b>Igraj sa rajom</b><small>Od 2 do 6 igrača u jednoj online partiji.</small></div></div>
+ <div class="home-side"><div class="side-card"><span class="side-icon">⌂</span><b>Gradi svoju imperiju</b><small>20 autentičnih nekretnina iz bosanske mahale.</small></div><div class="side-card"><span class="side-icon">◈</span><b>Promijeni pravila igre</b><small>Osam boja, taktički bonusi i pametne investicije.</small></div><div class="side-card"><span class="side-icon">♟</span><b>Igraj sa rajom</b><small>Od 2 do 6 igrača u jednoj online partiji.</small></div></div>
 </section>
 <section id="lobby" class="screen">
  <header class="topbar"><div class="mini-brand">BM <span>BOSANSKA MAHALA</span></div><div class="room-code">SOBA <b id="lobbyCode">------</b><button class="icon-btn" id="copyCode" title="Kopiraj kod">▣</button></div></header>
  <main class="lobby-wrap"><div class="section-kicker">PRIPREMA PARTIJE</div><h2>Okupljanje u mahali</h2><p class="muted">Pozovi prijatelje pomoću koda sobe. Potrebna su najmanje 2 igrača.</p>
  <div class="lobby-card"><div class="lobby-head"><div><b>Igrači u sobi</b><small id="playerCount">1 / 6 igrača</small></div><span class="live-pill">● SOBA AKTIVNA</span></div><div id="lobbyPlayers" class="lobby-players"></div>
+ <div class="token-picker"><b>Izaberi svoju ptičiju figuricu</b><div id="tokenChoices" class="token-choices"></div><small>Svaki igrač bira jedinstvenu figuricu.</small></div>
+ <div class="token-picker"><b>Izaberi svoju ptičiju figuricu</b><div id="tokenChoices" class="token-choices"></div><small>Svaki igrač bira jedinstvenu figuricu.</small></div>
  <div class="lobby-settings"><label>Trajanje partije<select id="roundSelect"><option value="20">20 krugova · Brza</option><option value="30" selected>30 krugova · Standardna</option><option value="40">40 krugova · Duga</option><option value="50">50 krugova · Maraton</option></select></label></div>
  <button id="startBtn" class="btn primary wide">Započni partiju</button><p id="lobbyHint" class="tiny center">Samo domaćin može pokrenuti igru.</p></div><button class="text-btn" id="leaveBtn">← Napusti sobu</button></main>
 </section>
 <section id="game" class="screen">
- <header class="game-header"><div class="mini-brand">BM <span>BOSANSKA MAHALA</span></div><div class="game-meta"><span id="roundLabel">KRUG 1 / 30</span><b id="turnLabel">Na potezu: —</b></div><div class="header-actions"><button class="icon-btn" id="rulesBtn" title="Pravila">?</button><button class="icon-btn" id="soundBtn" title="Zvuk">♫</button><button class="icon-btn" id="pauseBtn" title="Pauziraj igru">Ⅱ</button></div></header>
+ <header class="game-header"><div class="mini-brand">BM <span>BOSANSKA MAHALA</span></div><div class="game-meta"><span id="roundLabel">KRUG 1 / 30</span><span id="turnTimer" class="turn-timer">60s</span><span id="turnTimer" class="turn-timer">60s</span><b id="turnLabel">Na potezu: —</b></div><div class="header-actions"><button class="icon-btn" id="rulesBtn" title="Pravila">?</button><button class="icon-btn" id="soundBtn" title="Zvuk">♫</button><button class="icon-btn" id="pauseBtn" title="Pauziraj igru">Ⅱ</button></div></header>
  <main class="game-layout">
   <aside class="left-rail"><div class="panel-title">IGRAČI <span id="activeCount"></span></div><div id="playerCards" class="player-cards"></div>
    <div class="rail-box"><div class="panel-title">DOSTUPNE BOJE</div><div id="colorLegend" class="color-legend"></div></div>
@@ -38,7 +40,7 @@
   </aside>
   <section class="board-area">
    <div class="board-frame"><div id="board" class="board">
-    <div class="board-center"><div class="center-emblem">BM</div><div class="center-kicker">DOBRO DOŠLI U</div><h2>BOSANSKU<br><em>MAHALU</em></h2><div class="center-rule"></div><div id="centerRound" class="center-round">KRUG 1 OD 30</div><div id="centerTurn" class="center-turn">Čeka se potez…</div><div id="diceDisplay" class="dice-display"><span>⚀</span><span>⚀</span></div><div id="lastAction" class="last-action">Sretno u igri!</div></div>
+    <div class="board-center"><div class="center-emblem"><img src="/assets/board/center.png" alt="Ilustracija mahale" onerror="this.remove()"><span>BM</span></div><div class="center-kicker">DOBRO DOŠLI U</div><h2>BOSANSKU<br><em>MAHALU</em></h2><div class="center-rule"></div><div id="centerRound" class="center-round">KRUG 1 OD 30</div><div id="centerTurn" class="center-turn">Čeka se potez…</div><div id="diceDisplay" class="dice-display"><span>⚀</span><span>⚀</span></div><div id="lastAction" class="last-action">Sretno u igri!</div></div>
    </div></div>
    <div class="mobile-controls"><button id="rollBtnMobile" class="btn primary">Baci kockice</button><button id="endBtnMobile" class="btn ghost">Završi potez</button></div>
   </section>
