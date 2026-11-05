@@ -13,17 +13,21 @@ function makeGame(players, properties=t.properties.map(p=>({...p}))) {
     discarded:[], cardPiles:{nafaka:[...t.nafakaDeck],rizik:[...t.rizikDeck]}, queuedCards:[] };
 }
 
-test('kompaktna tabla ima 40 polja: 20 nekretnina, 4 taxi, 4 ugla i 12 specijalnih', () => {
+test('tabla ima 40 polja: 4 ugla, 4 taxi stanice i 32 kupovne lokacije', () => {
   const counts=t.board.reduce((a,s)=>(a[s.type]=(a[s.type]||0)+1,a),{});
   assert.equal(t.board.length,40);
-  assert.deepEqual(counts,{corner:4,property:20,special:12,taxi:4});
+  assert.deepEqual(counts,{corner:4,property:36});
+  assert.equal(t.board.filter(s=>s.propertyId?.startsWith('taxi')).length,4);
+  assert.equal(t.board.filter(s=>s.propertyId?.startsWith('p')).length,32);
   assert.equal(new Set(t.board.map(x=>x.index)).size,40);
+  assert.deepEqual([0,10,20,30].map(i=>t.board[i].kind),['start','jailvisit','parking','jail']);
+  for(const start of [0,10,20,30]) assert.deepEqual(t.board.slice(start+1,start+5).map(x=>x.type),['property','property','property','property']);
 });
 
-test('globalno ograničenje boje nikada ne dopušta četvrtu nekretninu', () => {
+test('svaka boja može imati četiri nekretnine, ali ne i petu', () => {
   const g=makeGame([makePlayer('a'),makePlayer('b')]);
-  g.properties[0].color='crvena';g.properties[1].color='crvena';g.properties[2].color='crvena';
-  assert.equal(t.colorCounts(g).crvena,3);
+  g.properties.slice(0,4).forEach(p=>p.color='crvena');
+  assert.equal(t.colorCounts(g).crvena,4);
   assert.equal(t.canColor(g,'crvena'),false);
   assert.equal(t.canColor(g,'plava'),true);
 });
@@ -31,30 +35,27 @@ test('globalno ograničenje boje nikada ne dopušta četvrtu nekretninu', () => 
 test('renta se množi ×2 za boju, ×2 za kategoriju i ×4 za oba bonusa', () => {
   const players=[makePlayer('a'),makePlayer('b')];
   const g=makeGame(players);
-  const [a,b,c,d,e]=g.properties;
-  a.owner=b.owner=c.owner=d.owner=e.owner='a';
-  a.color=b.color=c.color='crvena';
-  a.category='smještaj';b.category='trgovina';c.category='transport';
-  d.category=e.category='infrastruktura';d.color='plava';e.color='žuta';
+  const [a,b,c,d,e,f,h,i]=g.properties;
+  [a,b,c,d].forEach(p=>p.owner='a');
+  [a,b,c,d].forEach(p=>p.color='crvena');
+  [a,b,c,d].forEach((p,n)=>p.category=['smještaj','trgovina','transport','infrastruktura'][n]);
   assert.equal(t.rentFor(g,a),a.baseRent*2);
-  // c completes both its red color group and its transport category group.
-  const f=g.properties[5];f.owner='a';f.category='transport';f.color='zelena';
-  const h=g.properties[6];h.owner='a';h.category='transport';h.color='roza';
-  const i=g.properties[7],j=g.properties[8];i.owner=j.owner='a';i.category=j.category='transport';
+  [c,e,f,h].forEach(p=>{p.owner='a';p.category='transport';});
+  [c,e,f,h].forEach(p=>p.color='plava');
   assert.equal(t.rentFor(g,c),c.baseRent*4);
 });
 
-test('bonus plate počinje nakon trećeg završenog kruga i računa se po vlasniku', () => {
+test('Nafaka i Rizik se dijele samo jednom nakon trećeg završenog kruga', () => {
   const a=makePlayer('a'), b=makePlayer('b');
   const g=makeGame([a,b]);
   g.round=3;g.actedThisRound=['a','b'];
-  g.properties[0].owner='a';g.properties[1].owner='a';
-  g.properties[2].owner='b';g.properties[3].owner='b';
   const room={code:'TEST',hostId:'a',maxRounds:30,players:[a,b],game:g};
   t.applyRoundEnd(room);
   assert.equal(g.round,4);
-  assert.equal(a.money,3100);
-  assert.equal(b.money,3100);
+  assert.equal(g.milestoneCardsDrawn,true);
+  assert.equal(g.discarded.length,2);
+  g.actedThisRound=['a','b'];t.applyRoundEnd(room);
+  assert.equal(g.discarded.length,2);
 });
 
 test('dug se ne briše prodajom imovine dok nije stvarno pokriven', () => {
@@ -110,10 +111,18 @@ test('server može inicijalizirati partiju sa 2 do 6 igrača', () => {
   }
 });
 
-test('svaka od četiri kategorije ima tačno pet nekretnina', () => {
+test('osam kategorija imaju po četiri kupovne lokacije', () => {
   const counts=t.properties.reduce((a,p)=>(a[p.category]=(a[p.category]||0)+1,a),{});
-  assert.deepEqual(counts,{'smještaj':5,trgovina:5,transport:5,infrastruktura:5});
-  assert.equal(new Set(t.properties.map(p=>p.id)).size,20);
+  assert.deepEqual(counts,{'smještaj':4,trgovina:4,transport:4,infrastruktura:4,ugostiteljstvo:4,zabava:4,javne_usluge:4,industrija:4});
+  assert.equal(new Set(t.properties.map(p=>p.id)).size,32);
+});
+
+test('četiri taxi stanice daju rentu ×1, ×2, ×3 i ×4', () => {
+  const players=[makePlayer('a'),makePlayer('b')];
+  const g=makeGame(players,t.properties.map(p=>({...p})).concat(
+    ['Sjever','Istok','Jug','Zapad'].map((name,i)=>({id:`taxi${i+1}`,name,isTaxi:true,category:'taxi',owner:null,color:null,baseRent:100,houses:0,hotel:false,mortgaged:false,price:350,rents:[100,200,300,400,500,600],houseCost:0,hotelCost:0}))));
+  const taxis=g.properties.filter(p=>p.isTaxi);
+  taxis.forEach((p,i)=>{p.owner='a';assert.equal(t.rentFor(g,p),100*(i+1));});
 });
 
 test('zatvor i izlaz iz zatvora koriste uglove nove table', () => {

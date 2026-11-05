@@ -14,49 +14,39 @@ app.get('/health', (_, res) => res.json({ ok: true, game: 'Monopoly: Bosanska Ma
 const PORT = process.env.PORT || 3000;
 const COLORS = ['crvena','plava','žuta','zelena','ljubičasta','narandžasta','roza','tirkizna'];
 const COLOR_HEX = {'crvena':'#d84e55','plava':'#4d83d5','žuta':'#e8bd4b','zelena':'#56a879','ljubičasta':'#9270c9','narandžasta':'#dc8745','roza':'#d77eae','tirkizna':'#48aaa9'};
-const CATS = ['smještaj','trgovina','transport','infrastruktura'];
-const CAT_ICON = {'smještaj':'⌂','trgovina':'✦','transport':'➤','infrastruktura':'⚡'};
-
+const CATS = ['smještaj','trgovina','transport','infrastruktura','ugostiteljstvo','zabava','javne_usluge','industrija'];
+const CAT_ICON = {'smještaj':'⌂','trgovina':'✦','transport':'➤','infrastruktura':'⚡','ugostiteljstvo':'☕','zabava':'✧','javne_usluge':'⌂','industrija':'⚙'};
 const propertyNames = [
- ['Hotel Evropa','Motel Una','Hostel Baščaršija','Pansion Sebilj','Apartmani Neretva','Prenoćište Vrelo'],
- ['Ćevabdžinica Kod Želje','Pekara Klas','Restoran Stari Most','Tržni centar Mahala','Supermarket Bingo','Kafeterija Miris'],
- ['Željeznička stanica','Autobuska stanica','Aerodrom Mahala','Luka na Savi','Brzi Transport','Logistički centar'],
- ['Elektroprivreda','Gradski vodovod','Pumpa Bosna','Gradska toplana','Elektrodistribucija','Komunalno Sarajevo']
+ ['Hotel Evropa','Motel Una','Hostel Baščaršija','Pansion Sebilj'],
+ ['Ćevabdžinica Kod Želje','Pekara Klas','Restoran Stari Most','Kafeterija Miris'],
+ ['Željeznička stanica','Autobuska stanica','Aerodrom Mahala','Luka na Savi'],
+ ['Elektroprivreda','Gradski vodovod','Gradska toplana','Elektrodistribucija'],
+ ['Buregdžinica','Ćevabdžinica Neretva','Slastičarna','Restoran Bašča'],
+ ['Kino Mahala','Sportski centar','Igraonica','Kulturni centar'],
+ ['Gradska uprava','Pošta','Dom zdravlja','Vatrogasna stanica'],
+ ['Fabrika namještaja','Pilana Bosna','Metalna industrija','Skladište Sjever']
 ];
-const properties = [];
-for (let c=0;c<4;c++) for(let j=0;j<5;j++) {
-  const price = [200,250,300,250,250,200][j];
-  properties.push({
-    id:`p${c*6+j}`, name:propertyNames[c][j], category:CATS[c], icon:CAT_ICON[CATS[c]],
-    price, baseRent:[40,50,60,55,65,45][j], houseCost:150, hotelCost:300,
-    rents:[ [40,100,180,280,400,600], [50,120,220,330,480,700], [60,140,250,380,540,780], [55,130,235,350,500,740], [65,150,270,410,580,850], [45,110,200,300,430,650] ][j],
-    color:null, owner:null, houses:0, hotel:false, mortgaged:false, lastHouseRound:0
-  });
+const properties=[];
+for(let c=0;c<8;c++) for(let j=0;j<4;j++){
+ const idx=c*4+j, price=180+idx*18;
+ properties.push({id:`p${idx+1}`,name:propertyNames[c][j],category:CATS[c],icon:CAT_ICON[CATS[c]],price,
+  baseRent:Math.round(price*.18),houseCost:Math.round(price*.55),hotelCost:Math.round(price*.9),
+  rents:[Math.round(price*.18),Math.round(price*.42),Math.round(price*.75),Math.round(price*1.15),Math.round(price*1.7),Math.round(price*2.5)],
+  color:null,owner:null,houses:0,hotel:false,mortgaged:false,lastHouseRound:0});
 }
-const propertyById = Object.fromEntries(properties.map(p=>[p.id,p]));
-const specialDefs = [
- ['Općina','opcina'],['Pijaca','pijaca'],['Gradska banka','bank'],['Porez na promet','tax'],['Pošta','bank'],['Dom zdravlja','health'],
- ['Kazna za parkiranje','tax'],['Gradski trg','free'],['Sportski centar','bonus'],['Sud','opcina'],['Kulturni centar','bonus'],['Carina','tax'],
- ['Banka mahale','bank'],['Porez na dohodak','tax'],['Sajam','bonus'],['Gradska uprava','opcina']
-];
-const board = Array.from({length:40},(_,i)=>({index:i,type:'special',name:'Gradska služba',kind:'bonus'}));
-function set(i,obj){board[i]={index:i,...obj};}
-set(0,{type:'corner',kind:'start',name:'START'});
-set(10,{type:'corner',kind:'jailvisit',name:'IZLAZ IZ ZATVORA'});
-set(20,{type:'corner',kind:'parking',name:'BESPLATNI PARKING'});
-set(30,{type:'corner',kind:'jail',name:'ZATVOR'});
-// Kompaktnija tabla: 20 nekretnina, 4 taxi polja, 4 ugla i 12 specijalnih polja.
-let pi=0, si=0;
-const taxiSlots = new Set([5,15,25,35]);
-const cornerSlots = new Set([0,10,20,30]);
+const taxiNames=['Taxi Sjever','Taxi Istok','Taxi Jug','Taxi Zapad'];
+const taxiProperties=taxiNames.map((name,i)=>({id:`taxi${i+1}`,name,category:'taxi',icon:'🚕',isTaxi:true,price:350,baseRent:90,houseCost:0,hotelCost:0,rents:[90,180,270,360,450,540],color:null,owner:null,houses:0,hotel:false,mortgaged:false,lastHouseRound:0}));
+const allProperties=[...properties,...taxiProperties];
+const propertyById=Object.fromEntries(allProperties.map(p=>[p.id,p]));
+const board=Array.from({length:40},(_,i)=>({index:i,type:'corner',kind:'start',name:'START'}));
+const corners={0:['start','START'],10:['jailvisit','IZLAZ IZ ZATVORA'],20:['parking','BESPLATNI PARKING'],30:['jail','ZATVOR']};
+for(const [i,[kind,name]] of Object.entries(corners))board[+i]={index:+i,type:'corner',kind,name};
+const taxiAt={5:0,15:1,25:2,35:3};
+for(const [i,propertyIndex] of Object.entries(taxiAt))board[+i]={index:+i,type:'property',propertyId:taxiProperties[propertyIndex].id,name:taxiProperties[propertyIndex].name};
+let propertyIndex=0;
 for(let i=1;i<40;i++){
- if(cornerSlots.has(i)) continue;
- if(taxiSlots.has(i)){set(i,{type:'taxi',kind:'taxi',name:'TAXI'});continue;}
- if(pi<20 && i%2===1){const p=properties[pi++];set(i,{type:'property',propertyId:p.id,name:p.name});}
- else {const d=specialDefs[si % specialDefs.length];set(i,{type:'special',kind:d[1],name:d[0]});si++;}
-}
-for(let i=1;i<40 && pi<20;i++) if(!cornerSlots.has(i)&&!taxiSlots.has(i)&&board[i].type==='special'){
- const p=properties[pi++];set(i,{type:'property',propertyId:p.id,name:p.name});
+ if(corners[i]||taxiAt[i]!==undefined)continue;
+ const pr=properties[propertyIndex++];board[i]={index:i,type:'property',propertyId:pr.id,name:pr.name};
 }
 const nafakaDeck = [
  ['Poklon banke','Banka ti poklanja 150 KM.',{type:'money',amount:150}],
@@ -121,11 +111,12 @@ function getPlayer(room,id){return room.players.find(p=>p.id===id);}
 function prop(g,id){return g.properties.find(p=>p.id===id);}
 function owned(g,id){return g.properties.filter(p=>p.owner===id);}
 function colorCounts(g){const c={};for(const p of g.properties)if(p.color)c[p.color]=(c[p.color]||0)+1;return c;}
-function canColor(g,color){return COLORS.includes(color)&&(colorCounts(g)[color]||0)<3;}
-function completeColor(g,p){return p.color && g.properties.filter(x=>x.color===p.color&&x.owner===p.owner).length===3;}
-function completeCategory(g,p){return g.properties.filter(x=>x.category===p.category&&x.owner===p.owner).length===5;}
+function canColor(g,color){return COLORS.includes(color)&&(colorCounts(g)[color]||0)<4;}
+function completeColor(g,p){return p.color && g.properties.filter(x=>x.color===p.color&&x.owner===p.owner).length===4;}
+function completeCategory(g,p){return g.properties.filter(x=>x.category===p.category&&x.owner===p.owner).length===4;}
 function rentFor(g,p){
  if(p.mortgaged)return 0;
+ if(p.isTaxi){const count=g.properties.filter(x=>x.isTaxi&&x.owner===p.owner).length;return p.baseRent*Math.max(1,count);}
  let mult=(completeColor(g,p)?2:1)*(completeCategory(g,p)?2:1);
  const level=p.hotel?5:p.houses;
  return (level===0?p.baseRent:p.rents[level])*mult;
@@ -142,18 +133,10 @@ function applyRoundEnd(room){
  const g=room.game;
  if(g.turnOrder.every(id=>{const p=getPlayer(room,id);return !p||p.bankrupt||g.actedThisRound.includes(id)})){
    g.round++;
-   if(g.round>=4){
-     for(const p of room.players.filter(x=>!x.bankrupt)){
-       const n=owned(g,p.id).length;const bonus=200*(5-Math.min(n,5));if(bonus>0){p.money+=bonus;log(g,`${p.name} dobija ${bonus} KM bonusa za manji broj nekretnina.`);}
-     }
-   }
-   if(g.round>=4){
-     const scores=room.players.filter(x=>!x.bankrupt).map(p=>({id:p.id,s:score(p,g)}));
-     if(scores.length){const min=Math.min(...scores.map(x=>x.s)),max=Math.max(...scores.map(x=>x.s));
-       const lows=scores.filter(x=>x.s===min), highs=scores.filter(x=>x.s===max);
-       if(lows.length===1)drawCard(room,lows[0].id,'nafaka');
-       if(highs.length===1)drawCard(room,highs[0].id,'rizik');
-     }
+   if(g.round===4 && !g.milestoneCardsDrawn){
+     g.milestoneCardsDrawn=true;
+     const scores=room.players.filter(x=>!x.bankrupt).map(p=>({id:p.id,s:score(p,g)})).sort((a,b)=>a.s-b.s);
+     if(scores.length){drawCard(room,scores[0].id,'nafaka');if(scores.length>1)drawCard(room,scores[scores.length-1].id,'rizik');}
    }
    g.actedThisRound=[];
    for(const p of room.players){p.blockColor=false;}
@@ -184,8 +167,8 @@ function applyCard(room,p,e){
   case'everyone':for(const x of room.players.filter(x=>!x.bankrupt))x.money+=e.amount;break;
   case'under3':if(owned(g,p.id).length<3)p.money+=e.amount;break;
   case'giftOne':{p.money+=e.amount;const target=others[Math.floor(Math.random()*others.length)];if(target)charge(room,target,e.gift,p);break;}
-  case'freeColor':{const own=owned(g,p.id);const target=own.find(x=>COLORS.some(c=>canColor(g,c)&&c!==x.color));const color=COLORS.find(c=>canColor(g,c)&&c!==target?.color);if(target&&color)target.color=color;break;}
-  case'freeHouse':{const target=owned(g,p.id).find(x=>x.houses<4&&!x.hotel&&!x.mortgaged&&x.lastHouseRound!==g.round);if(target){target.houses++;target.lastHouseRound=g.round;}break;}
+  case'freeColor':{const own=owned(g,p.id);const target=own.find(x=>!x.isTaxi&&COLORS.some(c=>canColor(g,c)&&c!==x.color));const color=COLORS.find(c=>canColor(g,c)&&c!==target?.color);if(target&&color)target.color=color;break;}
+  case'freeHouse':{const target=owned(g,p.id).find(x=>!x.isTaxi&&x.houses<4&&!x.hotel&&!x.mortgaged&&x.lastHouseRound!==g.round);if(target){target.houses++;target.lastHouseRound=g.round;}break;}
   case'skipRent':p.skipRent=true;break;case'skipFee':p.skipFee=true;break;case'cheapHouse':p.cheapHouse=e.amount;break;
   case'pay':pay(p,e.amount);break;case'payAll':for(const x of others){pay(p,e.amount,x);if(g.phase==='debt')break;}break;
   case'perProperty':pay(p,e.amount*owned(g,p.id).length);break;
@@ -238,8 +221,8 @@ function charge(room,p,amount,recipient=null){
  if(p.money<0){p.debt=-p.money;debtCheck(room,p);}
 }
 function startGame(room){
- const g={started:true,ended:false,round:1,maxRounds:room.maxRounds,players:room.players,board:board.map(x=>({...x})),properties:properties.map(x=>({...x})),
-  bank:100000,phase:'turn',paused:false,pending:null,cardPiles:{nafaka:shuffle(nafakaDeck),rizik:shuffle(rizikDeck)},queuedCards:[],turnOrder:room.players.map(p=>p.id),currentPlayerId:room.players[0].id,turnDeadline:Date.now()+60000,
+ const g={started:true,ended:false,round:1,maxRounds:room.maxRounds,players:room.players,board:board.map(x=>({...x})),properties:allProperties.map(x=>({...x})),
+  bank:100000,phase:'turn',paused:false,pending:null,milestoneCardsDrawn:false,cardPiles:{nafaka:shuffle(nafakaDeck),rizik:shuffle(rizikDeck)},queuedCards:[],turnOrder:room.players.map(p=>p.id),currentPlayerId:room.players[0].id,turnDeadline:Date.now()+60000,
   actedThisRound:[],log:[],lastRoll:null,discarded:[],auction:null,trade:null};
  room.players.forEach(p=>Object.assign(p,{money:2500,position:0,jailTurns:0,inJail:false,bankrupt:false,skipRent:false,skipFee:false,skipNext:false,blockColor:false,cheapHouse:0,expensiveHouse:0,expensiveHotel:0,rentPaid:0,rentEarned:0,changedColorRound:0,hasRolled:false,extraRoll:false,doubles:0,debtRemaining:0,landedPropertyThisTurn:false,landedPropertyId:null}));
  room.game=g;
@@ -272,7 +255,7 @@ function resolveLanding(room,p,byTaxi=false){
  else if(s.kind==='health'){charge(room,p,50);log(g,`${p.name} plaća 50 KM za zdravstvenu uslugu.`);}
  else if(s.kind==='pijaca'){p.money+=50;log(g,`${p.name} prodaje robu na pijaci i dobija 50 KM.`);}
  else if(s.kind==='jailvisit')log(g,`${p.name} je u posjeti zatvoru.`);
- else if(s.kind==='taxi'){g.phase='taxi';g.pending={type:'taxi',playerId:p.id};}
+ 
 }
 function endTurn(room,p){
  const g=room.game;if(!g||g.ended)return;
@@ -347,8 +330,8 @@ io.on('connection',socket=>{
  socket.on('buy',({color}={})=>act(socket,'buy',(room,p,g)=>{
   if(g.phase!=='buy'||g.pending?.playerId!==p.id)throw Error('Kupovina nije dostupna.');
   const pr=prop(g,g.pending.propertyId);if(p.money<pr.price)throw Error('Nemaš dovoljno novca za kupovinu.');
-  if(!canColor(g,color))throw Error('Ta boja je već popunjena ili nije validna.');
-  p.money-=pr.price;pr.owner=p.id;pr.color=color;log(g,`${p.name} kupuje ${pr.name} za ${pr.price} KM i bira ${color} boju.`);
+  if(!pr.isTaxi&&!canColor(g,color))throw Error('Ta boja je već popunjena ili nije validna.');
+  p.money-=pr.price;pr.owner=p.id;pr.color=pr.isTaxi?null:color;log(g,`${p.name} kupuje ${pr.name} za ${pr.price} KM${pr.isTaxi?'':` i bira ${color} boju`}.`);
   g.phase='turn';g.pending=null;if(p.extraRoll)p.hasRolled=false;
  }));
  socket.on('declineBuy',()=>act(socket,'declineBuy',(room,p,g)=>{
@@ -360,30 +343,23 @@ io.on('connection',socket=>{
   const a=g.auction;if(a.order[a.turnIndex]!==p.id)throw Error('Nisi na redu za licitaciju.');
   amount=Math.floor(+amount);if(!Number.isFinite(amount)||amount<0||amount>p.money)throw Error('Neispravan iznos ponude.');
   a.bids[p.id]=amount;a.turnIndex++;
-  if(a.turnIndex>=a.order.length){const entries=Object.entries(a.bids).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]);if(entries.length){const [id,price]=entries[0],pr=prop(g,a.propertyId),buyer=getPlayer(room,id);buyer.money-=price;pr.owner=id;g.pending={type:'auctionColor',playerId:id,propertyId:pr.id};g.phase='auctionColor';log(g,`${buyer.name} pobjeđuje aukciju za ${price} KM.`);}else{g.phase='turn';log(g,'Aukcija je završena bez ponuda.');}g.auction=null;if(g.phase==='turn'&&getPlayer(room,g.currentPlayerId)?.extraRoll)getPlayer(room,g.currentPlayerId).hasRolled=false;}
+  if(a.turnIndex>=a.order.length){const entries=Object.entries(a.bids).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]);if(entries.length){const [id,price]=entries[0],pr=prop(g,a.propertyId),buyer=getPlayer(room,id);buyer.money-=price;pr.owner=id;if(pr.isTaxi){pr.color=null;g.pending=null;g.phase='turn';log(g,`${buyer.name} osvaja ${pr.name} za ${price} KM.`);}else{g.pending={type:'auctionColor',playerId:id,propertyId:pr.id};g.phase='auctionColor';log(g,`${buyer.name} pobjeđuje aukciju za ${price} KM.`);}}else{g.phase='turn';log(g,'Aukcija je završena bez ponuda.');}g.auction=null;if(g.phase==='turn'&&getPlayer(room,g.currentPlayerId)?.extraRoll)getPlayer(room,g.currentPlayerId).hasRolled=false;}
  }));
  socket.on('auctionColor',({color}={})=>act(socket,'auctionColor',(room,p,g)=>{
   if(g.phase!=='auctionColor'||g.pending?.playerId!==p.id)throw Error('Nisi pobjednik aukcije.');
-  if(!canColor(g,color))throw Error('Ta boja nije dostupna.');prop(g,g.pending.propertyId).color=color;g.phase='turn';g.pending=null;const turnPlayer=getPlayer(room,g.currentPlayerId);if(turnPlayer?.extraRoll)turnPlayer.hasRolled=false;
+  const pr=prop(g,g.pending.propertyId);if(!pr||pr.isTaxi||!canColor(g,color))throw Error('Ta boja nije dostupna.');pr.color=color;g.phase='turn';g.pending=null;const turnPlayer=getPlayer(room,g.currentPlayerId);if(turnPlayer?.extraRoll)turnPlayer.hasRolled=false;
  }));
- socket.on('taxi',({steps}={})=>act(socket,'taxi',(room,p,g)=>{
-  if(g.phase!=='taxi'||g.pending?.playerId!==p.id)throw Error('Taxi nije dostupan.');
-  const prices={1:2000,2:4500,3:7500};steps=+steps;
-  if(!prices[steps])throw Error('Izaberi 1, 2 ili 3 polja.');if(p.money<prices[steps])throw Error('Nemaš dovoljno novca.');
-  p.money-=prices[steps];log(g,`${p.name} plaća taxi ${prices[steps]} KM i vozi ${steps} polja.`);g.phase='turn';g.pending=null;movePlayer(room,p,steps,true,true);if(g.phase==='turn'&&p.extraRoll)p.hasRolled=false;
- }));
- socket.on('skipTaxi',()=>act(socket,'skipTaxi',(room,p,g)=>{if(g.phase!=='taxi'||g.pending?.playerId!==p.id)throw Error('Taxi nije dostupan.');g.phase='turn';g.pending=null;if(p.extraRoll)p.hasRolled=false;}));
  socket.on('endTurn',()=>act(socket,'endTurn',(room,p,g)=>{
   if(g.currentPlayerId!==p.id)throw Error('Nije tvoj potez.');
   if(p.extraRoll)throw Error('Imaš pravo na dodatno bacanje i ne možeš još završiti potez.');
   if(!p.hasRolled)throw Error('Prvo baci kockice.');
-  if(g.phase==='buy'||g.phase==='taxi'||g.phase==='auction'||g.phase==='auctionColor'||g.phase==='debt'||g.phase==='cardChoice')throw Error('Prvo završi aktivnu odluku.');
+  if(g.phase==='buy'||g.phase==='auction'||g.phase==='auctionColor'||g.phase==='debt'||g.phase==='cardChoice')throw Error('Prvo završi aktivnu odluku.');
   if(g.phase!=='turn')throw Error('Potez se trenutno ne može završiti.');
   endTurn(room,p);
  }));
  socket.on('changeColor',({propertyId,color}={})=>act(socket,'changeColor',(room,p,g)=>{
   if(g.currentPlayerId!==p.id||g.phase!=='turn'||p.inJail)throw Error('Ovu akciju možeš izvršiti samo tokom svog poteza izvan zatvora.');
-  const pr=prop(g,propertyId);if(!pr||pr.owner!==p.id)throw Error('Nekretnina nije tvoja.');
+  const pr=prop(g,propertyId);if(!pr||pr.owner!==p.id||pr.isTaxi)throw Error('Nekretnina nije tvoja ili ne podržava promjenu boje.');
   if(p.blockColor)throw Error('Kartica Rizik ti trenutno zabranjuje promjenu boje.');
   if(p.changedColorRound===g.round)throw Error('Već si promijenio boju u ovom krugu.');
   if(!canColor(g,color)||color===pr.color)throw Error('Izaberi drugu dostupnu boju.');
@@ -392,13 +368,13 @@ io.on('connection',socket=>{
  }));
  socket.on('buildHouse',({propertyId}={})=>act(socket,'buildHouse',(room,p,g)=>{
   if(g.currentPlayerId!==p.id||g.phase!=='turn'||p.inJail)throw Error('Graditi možeš samo tokom svog poteza izvan zatvora.');
-  const pr=prop(g,propertyId);if(!pr||pr.owner!==p.id||pr.mortgaged||pr.hotel||pr.houses>=4||pr.lastHouseRound===g.round)throw Error('Na ovoj nekretnini nije moguća gradnja ili si već nadogradio kućicu u ovom krugu.');
+  const pr=prop(g,propertyId);if(!pr||pr.isTaxi||pr.owner!==p.id||pr.mortgaged||pr.hotel||pr.houses>=4||pr.lastHouseRound===g.round)throw Error('Na ovoj nekretnini nije moguća gradnja ili si već nadogradio kućicu u ovom krugu.');
   const cost=pr.houseCost+(p.cheapHouse?-p.cheapHouse:0)+(p.expensiveHouse||0);if(p.money<cost)throw Error('Nemaš dovoljno novca.');
   p.money-=cost;p.cheapHouse=0;p.expensiveHouse=0;pr.houses++;pr.lastHouseRound=g.round;log(g,`${p.name} gradi kućicu na ${pr.name} za ${cost} KM.`);
  }));
  socket.on('buildHotel',({propertyId}={})=>act(socket,'buildHotel',(room,p,g)=>{
   if(g.currentPlayerId!==p.id||g.phase!=='turn'||p.inJail)throw Error('Hotel možeš graditi samo tokom svog poteza izvan zatvora.');
-  const pr=prop(g,propertyId);if(!pr||pr.owner!==p.id||pr.houses!==4||pr.hotel||pr.lastHouseRound===g.round||!p.landedPropertyThisTurn||p.landedPropertyId!==propertyId||p.position!==g.board.findIndex(s=>s.propertyId===propertyId))throw Error('Hotel se može graditi samo na nekretnini na kojoj stojiš i koja ima 4 kućice.');
+  const pr=prop(g,propertyId);if(!pr||pr.isTaxi||pr.owner!==p.id||pr.houses!==4||pr.hotel||pr.lastHouseRound===g.round||!p.landedPropertyThisTurn||p.landedPropertyId!==propertyId||p.position!==g.board.findIndex(s=>s.propertyId===propertyId))throw Error('Hotel se može graditi samo na nekretnini na kojoj stojiš i koja ima 4 kućice.');
   const cost=pr.hotelCost+(p.expensiveHotel||0);if(p.money<cost)throw Error('Nemaš dovoljno novca.');
   p.money-=cost;pr.houses=0;pr.hotel=true;pr.lastHouseRound=g.round;p.expensiveHotel=0;p.landedPropertyThisTurn=false;p.landedPropertyId=null;log(g,`${p.name} gradi hotel na ${pr.name} za ${cost} KM.`);
  }));

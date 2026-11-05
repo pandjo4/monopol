@@ -15,7 +15,7 @@
 .board-cell{transition:transform .24s ease,filter .2s ease}
 .board-cell:active{filter:brightness(.94)}
 .tile-art{width:100%;height:30%;object-fit:cover;position:absolute;top:15%;left:0;opacity:.16;pointer-events:none}
-.board-center{background-image:linear-gradient(#15283ad9,#15283ad9),url('/assets/board/center.png'),radial-gradient(circle at 50% 35%,#294966,#14263c 72%);background-size:cover;background-position:center}
+.board-center{background-image:linear-gradient(#15283ad9,#15283ad9),url('/assets/board/mahala_center.jpg'),radial-gradient(circle at 50% 35%,#294966,#14263c 72%);background-size:cover;background-position:center}
 .center-emblem{overflow:hidden;border-radius:10px;position:relative}
 .center-emblem img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .center-emblem span{position:relative;z-index:0}
@@ -55,3 +55,17 @@
 .player-bird{width:24px;height:24px;object-fit:contain;display:block}
 .choice-bird{width:34px;height:34px;object-fit:contain;display:block;margin:auto}
 .token-bird{display:inline-flex;align-items:center;justify-content:center;min-width:14px;min-height:17px}
+
+/* Razlikovanje vrsta kupovnih lokacija i taxi stanica */
+.board-cell.category-infrastruktura,.board-cell.category-javne-usluge{background:#fff9e9}
+.board-cell.category-infrastruktura .cell-icon{color:#c69b24;text-shadow:0 1px 0 #fff}
+.board-cell.category-smjestaj{background:#f5f0ff}
+.board-cell.category-trgovina{background:#fff3ed}
+.board-cell.category-transport{background:#edf5ff}
+.board-cell.category-ugostiteljstvo{background:#fff5e9}
+.board-cell.category-zabava{background:#fdf0f7}
+.board-cell.category-industrija{background:#eef1f3}
+.board-cell.taxi-property{background:#f8f5e9}
+.board-cell.taxi-property .cell-icon{color:#a78320}
+.property-icon-only{height:82px;background:linear-gradient(135deg,#f1ead8,#e7ddc6)}
+.property-icon-only span{display:grid;place-items:center;width:100%;height:100%;font-size:42px;color:#8c7650}

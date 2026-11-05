@@ -1,15 +1,15 @@
 # MONOPOLY: BOSANSKA MAHALA
 
-Online multiplayer igra za 2–6 igrača. Projekat koristi Node.js, Express i Socket.IO.
+Online multiplayer društvena igra za 2–6 igrača. Projekat koristi Node.js, Express i Socket.IO.
 
 ## Pokretanje lokalno
 
 1. Instaliraj Node.js 18 ili noviji.
-2. Otvori ovaj folder u terminalu.
+2. U terminalu otvori ovaj folder.
 3. Pokreni `npm ci`.
 4. Pokreni `npm start`.
 5. Otvori `http://localhost:3000`.
-6. Jedan igrač kreira sobu, ostali se priključuju kodom.
+6. Jedan igrač kreira sobu, a ostali se priključuju kodom.
 
 Nemoj otvarati `public/index.html` direktno: igra koristi Socket.IO server.
 
@@ -18,65 +18,41 @@ Nemoj otvarati `public/index.html` direktno: igra koristi Socket.IO server.
 - Runtime: Node
 - Build command: `npm ci`
 - Start command: `npm start`
-- `render.yaml` već sadrži osnovnu konfiguraciju.
+- `render.yaml` sadrži osnovnu konfiguraciju.
+- Na GitHub postavi projekat bez `node_modules`; Render instalira zavisnosti kroz `npm ci`.
 
-Na GitHub postavi projekat bez `node_modules` foldera. Render će zavisnosti instalirati kroz `npm ci`.
+## Trenutna pravila i struktura table
 
-## Šta je promijenjeno
+- Tabla ima 40 polja: 4 ugla, 4 taxi stanice i 32 obične kupovne lokacije.
+- Svaka stranica između uglova ima tačno 9 polja: 4 lokacije, taxi stanicu i još 4 lokacije.
+- Četiri ugla su START, IZLAZ IZ ZATVORA, BESPLATNI PARKING i ZATVOR.
+- Svih 32 običnih lokacija mogu se kupiti, posjedovati, založiti, prodati, razmjenjivati i nadograđivati.
+- Postoji 8 boja; svaka boja može imati najviše 4 lokacije. Posjedovanje sve 4 iste boje udvostručuje rentu.
+- Postoji 8 kategorija sa po 4 lokacije. Posjedovanje cijele kategorije također udvostručuje rentu.
+- Četiri taxi stanice su Taxi Sjever, Istok, Jug i Zapad. Taxi stanice se kupuju i posjeduju; renta je osnovna za jednu, ×2 za dvije, ×3 za tri i ×4 za sve četiri.
+- Taxi više nije plaćena opcija za pomjeranje.
+- Nakon završetka trećeg kruga, igrač s najmanje bodova izvlači Nafaku, a igrač s najviše bodova Rizik. Nema nasumičnih Nafaka/Rizik polja na tabli.
+- Svaki igrač počinje sa 2.500 KM, a prolazak kroz START donosi 200 KM.
+- Partija podržava 2–6 igrača, trajanje 20, 30, 40 ili 50 krugova i potez do 60 sekundi.
 
-- Tabla je smanjena sa 48 na 40 polja: 20 nekretnina, 4 taxi polja, 4 ugla i 12 specijalnih polja.
-- Svaka od četiri kategorije sada ima po 5 nekretnina.
-- Podržano je do 6 igrača i izbor jedinstvene ptičije figurice u lobiju.
-- Potez traje najviše 60 sekundi; server automatski završava istekli potez.
-- Kućica se na istoj nekretnini može izgraditi najviše jednom po krugu.
-- Dodani su zvučni efekti generisani u browseru i animacija figurica.
-- Dodan je sistem slika za nekretnine, specijalna polja, zatvor i centralnu ilustraciju.
-- Raspored je prilagođen užim ekranima i mobilnim uređajima.
+## Slike
 
-## Slike – kako ih ubaciti
+Kartice nekretnina su uklonjene iz prikaza table i detalja. Lokacije koriste jasne ikone i boje kategorija, tako da ne zavise od dodatnih PNG fajlova.
 
-Sve slike su opcionalne. Ako slika nedostaje ili se ne može učitati, igra prikazuje emoji/ikonu kao rezervu. Nemoj mijenjati nazive fajlova ako želiš da ih igra automatski pronađe.
+Postojeće figurice se učitavaju iz `public/assets/tokens/`:
 
-### 1. Slike nekretnina i polja
+- `bird_01.png` – 🐦
+- `bird_02.png` – 🦉
+- `bird_03.png` – 🦜
+- `bird_04.png` – 🐧
+- `bird_05.png` – 🦆
+- `bird_06.png` – 🦅
 
-Folder: `public/assets/cards/`
+Slika sredine table je `public/assets/board/mahala_center.jpg`. Ako neka slika figurice nedostaje, prikazuje se emoji kao rezerva.
 
-- Nekretnine: `p0.png` do `p19.png`
-- Specijalna polja: `opcina.png`, `pijaca.png`, `bank.png`, `tax.png`, `health.png`, `free.png`, `bonus.png`
-- Zatvor i posjeta zatvoru: `jail.png`, `jailvisit.png`
-- Start, parking i taxi: `start.png`, `parking.png`, `taxi.png`
-
-**Preporučena dimenzija: 512 × 512 px, PNG, kvadratni format.**
-Svaka kartica u prozoru detalja koristi isti fiksni prostor, pa slike neće mijenjati dimenzije kartica. Koristi centriran motiv i ostavi malo praznog prostora uz rubove.
-
-### 2. Ptičije figurice
-
-Folder: `public/assets/tokens/`
-
-- `sparrow.png` – 🐦
-- `owl.png` – 🦉
-- `parrot.png` – 🦜
-- `penguin.png` – 🐧
-- `duck.png` – 🦆
-- `eagle.png` – 🦅
-
-**Preporučena dimenzija: 256 × 256 px, PNG sa transparentnom pozadinom.**
-Napravi cijelu figuricu vidljivom, gledanu iz blago povišene perspektive, kao malu 2D društvenu igru. Ne dodaj tekst ni pozadinu.
-
-### 3. Slika sredine table
-
-Folder: `public/assets/board/`
-
-- `center.png` – ilustracija mahale koja se prikazuje u centru table.
-
-**Preporučena dimenzija: 1024 × 1024 px, PNG, kvadratni format.**
-Izbjegavaj sitne detalje i tekst koji bi postao nečitljiv na telefonu.
-
-## Testiranje
-
-Pokreni:
+## Provjera
 
 - `npm run check` – provjera JavaScript sintakse.
-- `npm test` – automatski testovi pravila igre.
+- `npm test` – automatski testovi rasporeda table, boja, rente, taxi stanica i pravila kartica.
 
-Napomena: sobe i aktivne partije čuvaju se u memoriji servera. Restart ili redeploy Render servisa briše aktivne sobe. Za trajno čuvanje partija potrebna je baza podataka.
+Sobe i aktivne partije čuvaju se u memoriji servera. Restart ili redeploy Render servisa briše aktivne sobe; trajno čuvanje zahtijeva bazu podataka.
