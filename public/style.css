@@ -100,3 +100,74 @@
  .property-icon-only{height:96px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* UI polish: čitljivije kartice, jasni podaci i fluidne animacije */
+:root{--ease-out:cubic-bezier(.2,.75,.25,1);--gold-glow:0 0 0 3px #d9b66e24,0 8px 24px #b68d4220}
+html{scroll-behavior:smooth}
+button{ -webkit-tap-highlight-color:transparent }
+.btn,.icon-btn,.token-choice,.color-choice{transition:transform .22s var(--ease-out),box-shadow .22s,border-color .22s,background .22s,filter .22s}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px #17263a22}
+.btn:active:not(:disabled){transform:translateY(0) scale(.98)}
+.icon-btn:hover{background:#ffffff20;border-color:#d9b66e88;transform:translateY(-1px)}
+.home-panel,.side-card,.lobby-card,.player-cards,.rail-box,.turn-card,.action-panel{animation:panelEnter .55s var(--ease-out) both}
+.home-side .side-card:nth-child(2){animation-delay:.08s}.home-side .side-card:nth-child(3){animation-delay:.16s}
+@keyframes panelEnter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tileEnter{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes softGlow{0%,100%{box-shadow:0 0 0 0 #d9b66e00}50%{box-shadow:0 0 0 3px #d9b66e25}}
+@keyframes diceFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(2deg)}}
+.board-cell{animation:tileEnter .28s var(--ease-out) both;transition:transform .2s var(--ease-out),filter .2s,box-shadow .2s;gap:2px}
+.board-cell:hover{z-index:4;filter:brightness(1.035);box-shadow:inset 0 0 0 2px #c69b4d;transform:scale(1.035)}
+.board-cell:active{transform:scale(.97)}
+.board-cell .cell-band{height:12%;min-height:3px;max-height:9px;border-radius:1px}
+.board-cell .cell-name{order:1;flex:0 1 auto;width:100%;max-height:42%;display:flex;align-items:center;justify-content:center;padding:1px 2px;font-size:clamp(5px,.68vw,10px);line-height:1.12;letter-spacing:0;overflow-wrap:anywhere;text-wrap:balance;color:#26394f}
+.board-cell .cell-icon{order:2;flex:0 0 27%;width:100%;min-height:0;height:27%;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,1.45vw,20px);line-height:1;filter:drop-shadow(0 2px 2px #26364a22)}
+.board-cell .cell-icon.image-icon img{width:80%;height:100%;object-fit:contain}
+.board-cell .cell-price{order:3;margin-top:auto;padding-bottom:1px;font-size:clamp(5px,.57vw,8px);line-height:1.05;color:#687789}
+.board-cell .cell-band{order:0}
+.board-cell .tokens{order:4}
+.board-cell.taxi-property{background:linear-gradient(150deg,#fffdf5,#f4edda)}
+.board-cell.taxi-property .cell-icon{width:86%;}
+.board-cell.taxi-property .cell-name{color:#57451f}
+.board-cell .owner-dot{box-shadow:0 0 0 2px #fff;right:2px;top:2px}
+.board-center{box-shadow:inset 0 0 50px #050d1a55}
+.center-emblem{box-shadow:0 5px 22px #0004;animation:softGlow 4s ease-in-out infinite}
+.die{transition:transform .2s;animation:diceFloat 3.2s ease-in-out infinite}
+.die:nth-child(2){animation-delay:.35s}
+.modal{backdrop-filter:blur(7px);animation:fadeIn .2s ease-out}
+.modal-card{animation:modalEnter .28s var(--ease-out);border:1px solid #e7dcc5}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalEnter{from{opacity:0;transform:translateY(15px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-card h3{padding-right:28px;color:#1b2d43}
+.modal-grid .property-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;min-width:0;padding:12px 13px;background:linear-gradient(145deg,#fff,#f7f3e9);border:1px solid #e9e2d5;border-radius:10px;box-shadow:0 2px 8px #26364a08}
+.modal-grid .property-stat small{display:block;color:#87919c;font-size:10px;font-weight:700;letter-spacing:.45px;text-transform:uppercase;line-height:1.2}
+.modal-grid .property-stat b{display:block;color:#24364c;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+.property-card-art{background:radial-gradient(circle at 50% 35%,#fffdf8,#e9dfcc);border:1px solid #e6dece}
+.property-card-art img{object-fit:contain!important;padding:18px}
+.modal-card hr{border:0;border-top:1px solid #e9e2d5;margin:18px 0}
+.modal-card .modal-grid .btn{min-height:42px}
+.toast{backdrop-filter:blur(10px);border:1px solid #ffffff24}
+input,select{transition:border-color .2s,box-shadow .2s}
+@media(min-width:761px){.game-layout{grid-template-columns:minmax(165px,205px) minmax(0,1fr) minmax(205px,245px)}.board-frame{padding:clamp(5px,.7vw,10px)}}
+@media(max-width:760px){
+ .board-cell{gap:1px}
+ .board-cell .cell-band{height:10%;min-height:2px}
+ .board-cell .cell-name{font-size:clamp(4.5px,1.38vw,8px);line-height:1.06;max-height:45%;padding:0 1px}
+ .board-cell .cell-icon{height:25%;flex-basis:25%;font-size:clamp(8px,2.25vw,14px)}
+ .board-cell .cell-icon.image-icon img{width:92%}
+ .board-cell .cell-price{font-size:clamp(4px,1.02vw,6px)}
+ .modal{padding:10px;align-items:center}
+ .modal-card{max-height:min(88dvh,760px);padding:22px 17px 18px;border-radius:14px}
+ .modal-card h3{font-size:22px}
+ .modal-grid{gap:7px}
+ .modal-grid .property-stat{padding:10px;gap:5px}
+ .modal-grid .property-stat small{font-size:9px}
+ .modal-grid .property-stat b{font-size:13px}
+}
+@media(max-width:420px){
+ .game-meta{min-width:0}.game-meta b{max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .board-cell .cell-name{font-size:clamp(4px,1.25vw,6px)}
+ .board-cell .cell-icon{font-size:clamp(7px,2vw,11px)}
+ .board-cell .cell-price{font-size:4px}
+ .property-card-art{height:118px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
