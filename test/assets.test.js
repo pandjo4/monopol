@@ -19,3 +19,16 @@ test('SVG ikone infrastrukture imaju ispravan osnovni SVG korijen', () => {
     assert.match(svg, /<\/svg>\s*$/);
   }
 });
+
+test('četiri infrastrukturne nekretnine koriste svoje SVG ilustracije', () => {
+  const game = fs.readFileSync(path.join(__dirname, '..', 'public', 'game.js'), 'utf8');
+  for (const [name, file] of [
+    ['elektroprivreda', 'elektroprivreda.svg'],
+    ['gradski vodovod', 'vodovod.svg'],
+    ['gradska toplana', 'toplana.svg'],
+    ['elektrodistribucija', 'elektrodistribucija.svg']
+  ]) {
+    assert.match(game, new RegExp(`['"]${name}['"]\\s*:\\s*['"]${file}['"]`), `${name} mora biti povezan sa ${file}`);
+    assert.ok(fs.statSync(path.join(root, file)).size > 1000, `${file} ne smije biti prazna ikona`);
+  }
+});

@@ -171,3 +171,76 @@ input,select{transition:border-color .2s,box-shadow .2s}
  .property-card-art{height:118px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Završna dorada table: aktivno polje je vidljivo i kada je ilustracija mala. */
+.board-cell.current-player-tile{
+  z-index:5;
+  overflow:visible;
+  outline:2px solid #d4a943;
+  outline-offset:-3px;
+  background:linear-gradient(145deg,#fffdf4,#f8edcf)!important;
+  box-shadow:inset 0 0 0 2px #fff7d8,0 0 0 2px #d4a94366,0 0 15px 5px #e0b94b88;
+  animation:currentTilePulse 1.9s ease-in-out infinite;
+}
+.board-cell.current-player-tile::before{
+  content:"NA POTEZU";
+  position:absolute;
+  z-index:8;
+  top:2px;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:calc(100% - 4px);
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  padding:2px 4px;
+  border-radius:4px;
+  background:#24364c;
+  color:#ffe7a8;
+  font-size:clamp(4px,.43vw,6px);
+  font-weight:900;
+  letter-spacing:.35px;
+  box-shadow:0 1px 4px #101d3155;
+  pointer-events:none;
+}
+.board-cell.current-player-tile .tokens{z-index:9;bottom:3px;}
+.board-cell.current-player-tile .token-bird{
+  width:clamp(14px,1.8vw,23px);
+  height:clamp(14px,1.8vw,23px);
+  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 2px 3px #17263a88);
+}
+.board-cell.occupied-tile{box-shadow:inset 0 0 0 1px #6b829b66;}
+.board-cell .image-icon img{max-width:100%;max-height:100%;}
+.board-cell .icon-fallback-emoji{display:grid;place-items:center;width:100%;height:100%;font-size:inherit;}
+.board-cell.category-infrastruktura .cell-icon.image-icon{flex-basis:31%;height:31%;}
+.board-cell.category-infrastruktura .image-icon img{width:92%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 2px #26364a30);}
+.dice-display span{display:inline-grid;place-items:center;min-width:1.2em;min-height:1.2em;border-radius:9px;text-shadow:0 3px 8px #0005;}
+@keyframes currentTilePulse{
+  0%,100%{box-shadow:inset 0 0 0 2px #fff7d8,0 0 0 2px #d4a94366,0 0 10px 2px #e0b94b55;}
+  50%{box-shadow:inset 0 0 0 2px #fff,0 0 0 3px #d4a943aa,0 0 19px 7px #e0b94b99;}
+}
+@media(max-width:760px){
+  .game-layout{width:100%;padding:6px;}
+  .board-area{width:100%;min-width:0;}
+  .board-frame{width:100%;max-width:100%;padding:3px;}
+  .board{width:100%;max-width:100%;aspect-ratio:1/1;}
+  .board-cell.current-player-tile::before{font-size:clamp(3px,.8vw,5px);padding:1px 2px;top:1px;}
+  .board-cell.current-player-tile .token-bird{width:clamp(10px,2.5vw,15px);height:clamp(10px,2.5vw,15px);}
+  .board-cell.category-infrastruktura .cell-icon.image-icon{height:29%;flex-basis:29%;}
+  .board-cell.category-infrastruktura .image-icon img{width:100%;}
+  .right-rail{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .turn-card{min-width:0;}
+}
+@media(max-width:380px){
+  .game-header{padding-inline:6px;}
+  .game-header .mini-brand{font-size:11px;}
+  .game-meta{font-size:7px;}
+  .header-actions .icon-btn{width:28px;height:28px;}
+  .board-frame{padding:2px;}
+  .board{gap:1px;border-width:1px;}
+  .board-cell .cell-name{font-size:clamp(3.6px,1.15vw,5px);}
+  .board-cell .cell-price{font-size:3.8px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .board-cell.current-player-tile{animation:none;}
+}

@@ -5,10 +5,29 @@ let state=null,myId=null,myToken=null,roomCode=null,muted=false,selectedProperty
 const COLORS=['crvena','plava','žuta','zelena','ljubičasta','narandžasta','roza','tirkizna'];
 const HEX={'crvena':'#d84e55','plava':'#4d83d5','žuta':'#e8bd4b','zelena':'#56a879','ljubičasta':'#9270c9','narandžasta':'#dc8745','roza':'#d77eae','tirkizna':'#48aaa9'};
 const CAT={'smještaj':'🏠','trgovina':'🛍️','transport':'🚉','infrastruktura':'⚡','ugostiteljstvo':'☕','zabava':'🎭','javne_usluge':'🏛️','industrija':'🏭','taxi':'🚕'};
-const CATEGORY_IMAGES={'smještaj':'smjestaj.png','trgovina':'trgovina.png','transport':'transport.png','infrastruktura':'infrastruktura.png','ugostiteljstvo':'ugostiteljstvo.png','zabava':'zabava.png','javne_usluge':'javne_usluge.png','industrija':'industrija.png'};
+const CATEGORY_IMAGES={'smještaj':'smjestaj.png','trgovina':'trgovina.png','transport':'transport.png','infrastruktura':'infrastructure.png','ugostiteljstvo':'ugostiteljstvo.png','zabava':'zabava.png','javne_usluge':'javne_usluge.png','industrija':'industrija.png'};
+// Infrastrukturne nekretnine imaju vlastite ilustracije; nemoj prikazivati generičku ikonu kategorije.
+const PROPERTY_IMAGES={
+ 'elektroprivreda':'elektroprivreda.svg',
+ 'gradski vodovod':'vodovod.svg',
+ 'gradska toplana':'toplana.svg',
+ 'elektrodistribucija':'elektrodistribucija.svg'
+};
 const SPACE_IMAGES={start:'kreni.png',jail:'zatvor.png',parking:'parking.png',jailvisit:'izlaz.png'};
-function propertyIconMarkup(pr,cls='cell-icon'){const file=pr.isTaxi?'taxi.png':CATEGORY_IMAGES[pr.category];const fallback=CAT[pr.category]||'🏡';return file?`<span class="${cls} image-icon"><img src="/assets/inf/${file}" alt="Ikona ${pr.isTaxi?'taxi stanice':'kategorije '+esc(pr.category)}" loading="lazy" onerror="this.parentElement.outerHTML='<span class=\'${cls}\' aria-hidden=\'true\'>${pr.isTaxi?'🚕':fallback}</span>'"></span>`:`<span class="${cls}" aria-hidden="true">${fallback}</span>`;}
-function propertyArtMarkup(pr){const file=pr.isTaxi?'taxi.png':CATEGORY_IMAGES[pr.category];const fallback=CAT[pr.category]||'🏡';return file?`<img src="/assets/inf/${file}" alt="Ikona ${pr.isTaxi?'taxi stanice':'kategorije '+esc(pr.category)}" style="object-fit:contain;padding:18px" onerror="this.outerHTML='<span>${pr.isTaxi?'🚕':fallback}</span>'">`:`<span>${fallback}</span>`;}
+function propertyImageFile(pr){
+ if(pr.isTaxi)return 'taxi.png';
+ const name=String(pr.name||'').trim().toLocaleLowerCase('bs');
+ return PROPERTY_IMAGES[name]||CATEGORY_IMAGES[pr.category]||null;
+}
+function propertyIconMarkup(pr,cls='cell-icon'){
+ const file=propertyImageFile(pr),fallback=CAT[pr.category]||'🏡';
+ if(!file)return `<span class="${cls}" aria-hidden="true">${fallback}</span>`;
+ return `<span class="${cls} image-icon"><img src="/assets/inf/${file}" alt="Ikona ${esc(pr.name||pr.category)}" loading="eager" decoding="async" onerror="this.closest('.image-icon')?.classList.add('icon-fallback');this.replaceWith(Object.assign(document.createElement('span'),{className:'icon-fallback-emoji',textContent:'${pr.isTaxi?'🚕':fallback}'}))"></span>`;
+}
+function propertyArtMarkup(pr){
+ const file=propertyImageFile(pr),fallback=CAT[pr.category]||'🏡';
+ return file?`<img src="/assets/inf/${file}" alt="Ikona ${esc(pr.name||pr.category)}" decoding="async" style="object-fit:contain;padding:18px" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${pr.isTaxi?'🚕':fallback}'}))">`:`<span>${fallback}</span>`;
+}
 function spaceIconMarkup(kind){const file=SPACE_IMAGES[kind];return file?`<img class="space-art" src="/assets/inf/${file}" alt="" loading="lazy">`:'<span class="cell-icon">◆</span>';}
 const CAT_CLASS={'smještaj':'smjestaj','trgovina':'trgovina','transport':'transport','infrastruktura':'infrastruktura','ugostiteljstvo':'ugostiteljstvo','zabava':'zabava','javne_usluge':'javne-usluge','industrija':'industrija'};
 const DICE=['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -52,6 +71,10 @@ function renderBoard(){
  state.game.board.forEach((s,i)=>{
   const [r,c]=coord(i),cell=document.createElement('button');cell.className=`board-cell ${s.type}`;cell.style.gridRow=r+1;cell.style.gridColumn=c+1;cell.dataset.index=i;
   const pr=s.propertyId?state.game.properties.find(p=>p.id===s.propertyId):null;
+  const activePlayer=state.players.find(p=>p.id===state.game.currentPlayerId&&!p.bankrupt);
+  const activePlayerHere=!!activePlayer&&activePlayer.position===i;
+  if(activePlayerHere){cell.classList.add('current-player-tile');cell.setAttribute('aria-label',`${s.name||pr?.name||'Polje'} · trenutni igrač ${activePlayer.name} je ovdje`);}
+  else if(state.players.some(p=>p.position===i&&!p.bankrupt))cell.classList.add('occupied-tile');
   if(pr){cell.classList.add(pr.isTaxi?'taxi-property':`category-${CAT_CLASS[pr.category]||'other'}`);cell.setAttribute('aria-label',`${pr.name}, ${pr.price} KM${pr.owner?' · u vlasništvu':''}`);cell.innerHTML=`<div class="cell-band" style="background:${pr.isTaxi?'linear-gradient(90deg,#343434,#d7b64d)':pr.color?HEX[pr.color]:'#e5e0d5'}"></div><div class="cell-name">${esc(pr.name)}</div>${propertyIconMarkup(pr)}<div class="cell-price">${pr.price} KM</div>${pr.owner?`<i class="owner-dot" style="background:${state.players.find(p=>p.id===pr.owner)?.colorToken||'#333'}"></i>`:''}<div class="tokens">${state.players.filter(p=>p.position===i&&!p.bankrupt).map(p=>`<i class="token-bird" data-player="${p.id}" title="${esc(p.name)}">${birdMarkup(p.tokenIcon||'🐦')}</i>`).join('')}</div>`;
   }else{const icon=s.kind==='taxi'?'🚕':s.kind==='start'?'➜':s.kind==='jail'?'▥':s.kind==='parking'?'✧':s.kind==='jailvisit'?'⚖':'◆';cell.setAttribute('aria-label',s.name);cell.innerHTML=`${SPACE_IMAGES[s.kind]?spaceIconMarkup(s.kind):`<span class="cell-icon">${icon}</span>`}<div class="cell-name">${esc(s.name)}</div>${s.kind==='taxi'?'<div class="cell-price">2–7.5k KM</div>':''}<div class="tokens">${state.players.filter(p=>p.position===i&&!p.bankrupt).map(p=>`<i class="token-bird" data-player="${p.id}" title="${esc(p.name)}">${birdMarkup(p.tokenIcon||'🐦')}</i>`).join('')}</div>`;}
   cell.onclick=()=>{if(pr)showProperty(pr.id);else showBoardSpace(s);};board.appendChild(cell);
