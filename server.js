@@ -167,8 +167,8 @@ function applyCard(room,p,e){
   case'everyone':for(const x of room.players.filter(x=>!x.bankrupt))x.money+=e.amount;break;
   case'under3':if(owned(g,p.id).length<3)p.money+=e.amount;break;
   case'giftOne':{p.money+=e.amount;const target=others[Math.floor(Math.random()*others.length)];if(target)charge(room,target,e.gift,p);break;}
-  case'freeColor':{const own=owned(g,p.id);const target=own.find(x=>!x.isTaxi&&COLORS.some(c=>canColor(g,c)&&c!==x.color));const color=COLORS.find(c=>canColor(g,c)&&c!==target?.color);if(target&&color)target.color=color;break;}
-  case'freeHouse':{const target=owned(g,p.id).find(x=>!x.isTaxi&&x.houses<4&&!x.hotel&&!x.mortgaged&&x.lastHouseRound!==g.round);if(target){target.houses++;target.lastHouseRound=g.round;}break;}
+  case'freeColor':{const own=owned(g,p.id);const target=own.find(x=>!x.isTaxi&&COLORS.some(c=>canColor(g,c)&&c!==x.color));const color=COLORS.find(c=>canColor(g,c)&&c!==target?.color);if(target&&color)target.color=color;else p.money+=100;break;}
+  case'freeHouse':{const target=owned(g,p.id).find(x=>!x.isTaxi&&x.houses<4&&!x.hotel&&!x.mortgaged&&x.lastHouseRound!==g.round);if(target){target.houses++;target.lastHouseRound=g.round;}else p.money+=100;break;}
   case'skipRent':p.skipRent=true;break;case'skipFee':p.skipFee=true;break;case'cheapHouse':p.cheapHouse=e.amount;break;
   case'pay':pay(p,e.amount);break;case'payAll':for(const x of others){pay(p,e.amount,x);if(g.phase==='debt')break;}break;
   case'perProperty':pay(p,e.amount*owned(g,p.id).length);break;
@@ -307,6 +307,13 @@ io.on('connection',socket=>{
   if(room.players.some(x=>x.id!==p.id&&x.tokenIcon===token))return socket.emit('errorMessage','Ova figurica je već zauzeta.');
   p.tokenIcon=token;emitRoom(room);
  });
+ socket.on('chooseColor',color=>{
+  const room=rooms.get(socketRoom.get(socket.id));if(!room||room.game?.started)return;
+  const p=getPlayer(room,socket.data.playerId);if(!p||!COLORS.includes(color))return;
+  const hex=COLOR_HEX[color];
+  if(room.players.some(x=>x.id!==p.id&&x.colorToken===hex))return socket.emit('errorMessage','Tu boju već koristi drugi igrač.');
+  p.colorToken=hex;emitRoom(room);
+ });
  socket.on('setRounds',n=>{const room=rooms.get(socketRoom.get(socket.id));if(!room)return;if(room.hostId===socket.data.playerId&&!room.game?.started)room.maxRounds=[20,30,40,50].includes(+n)?+n:30;emitRoom(room);});
  socket.on('kick',id=>{const room=rooms.get(socketRoom.get(socket.id));if(!room||room.hostId!==socket.data.playerId||room.game?.started)return;const target=getPlayer(room,id);if(!target||target.id===room.hostId)return;const targetSocket=target.socketId&&io.sockets.sockets.get(target.socketId);if(targetSocket){targetSocket.leave(room.code);socketRoom.delete(targetSocket.id);targetSocket.emit('errorMessage','Domaćin te je uklonio iz sobe.');}room.players=room.players.filter(p=>p.id!==id);emitRoom(room);});
  socket.on('roll',()=>act(socket,'roll',(room,p,g)=>{
@@ -334,9 +341,17 @@ io.on('connection',socket=>{
   p.money-=pr.price;pr.owner=p.id;pr.color=pr.isTaxi?null:color;log(g,`${p.name} kupuje ${pr.name} za ${pr.price} KM${pr.isTaxi?'':` i bira ${color} boju`}.`);
   g.phase='turn';g.pending=null;if(p.extraRoll)p.hasRolled=false;
  }));
- socket.on('declineBuy',()=>act(socket,'declineBuy',(room,p,g)=>{
+ socket.on('declineBuy',({choice='skip'}={})=>act(socket,'declineBuy',(room,p,g)=>{
   if(g.phase!=='buy'||g.pending?.playerId!==p.id)throw Error('Nije aktivna kupovina.');
-  const pr=prop(g,g.pending.propertyId);g.auction={propertyId:pr.id,bids:{},turnIndex:0,order:g.turnOrder.filter(id=>!getPlayer(room,id).bankrupt)};g.phase='auction';g.pending=null;log(g,`Aukcija za ${pr.name} je otvorena.`);
+  const pr=prop(g,g.pending.propertyId);
+  if(choice==='auction'){
+   g.auction={propertyId:pr.id,bids:{},turnIndex:0,order:g.turnOrder.filter(id=>{const player=getPlayer(room,id);return player&&!player.bankrupt;})};
+   g.phase='auction';log(g,`Aukcija za ${pr.name} je otvorena.`);
+  }else if(choice==='skip'){
+   g.phase='turn';log(g,`${p.name} preskače kupovinu nekretnine ${pr.name}. Niko je ne može kupiti.`);
+   if(p.extraRoll)p.hasRolled=false;
+  }else throw Error('Izbor nije validan.');
+  g.pending=null;
  }));
  socket.on('bid',amount=>act(socket,'bid',(room,p,g)=>{
   if(g.phase!=='auction'||!g.auction)throw Error('Nema aktivne aukcije.');
